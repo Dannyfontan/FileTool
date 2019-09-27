@@ -255,7 +255,7 @@ class Ui_MainWindow(object):
                 break
         
         localFile.close()
-        md5 = str(type(ch))
+        md5 = str(type(ch.result()))
         return md5
 
     def browse_one(self):
