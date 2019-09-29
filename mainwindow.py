@@ -9,7 +9,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
-
+from fuzzywuzzy import fuzz
+import os
+import hashlib
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -78,14 +80,19 @@ class Ui_MainWindow(object):
         self.lineEdit = QtWidgets.QLineEdit(self.groupBox_4)
         self.lineEdit.setObjectName("lineEdit")
         self.horizontalLayout_3.addWidget(self.lineEdit)
-        self.comboBox = QtWidgets.QComboBox(self.groupBox_4)
-        self.comboBox.setObjectName("comboBox")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.horizontalLayout_3.addWidget(self.comboBox)
-        self.pushButton = QtWidgets.QPushButton(self.groupBox_4)
-        self.pushButton.setObjectName("pushButton")
-        self.horizontalLayout_3.addWidget(self.pushButton)
+        self.comboBox_type = QtWidgets.QComboBox(self.groupBox_4)
+        self.comboBox_type.setObjectName("comboBox_type")
+        self.comboBox_type.addItem("")
+        self.comboBox_type.addItem("")
+        self.comboBox_area = QtWidgets.QComboBox(self.groupBox_4)
+        self.comboBox_area.setObjectName("comboBox_area")
+        self.comboBox_area.addItem("")
+        self.comboBox_area.addItem("")
+        self.horizontalLayout_3.addWidget(self.comboBox_type)
+        self.horizontalLayout_3.addWidget(self.comboBox_area)
+        self.searchBut = QtWidgets.QPushButton(self.groupBox_4)
+        self.searchBut.setObjectName("pushButton")
+        self.horizontalLayout_3.addWidget(self.searchBut)
         self.tableWidget = QtWidgets.QTableWidget(self.centralWidget)
         self.tableWidget.setGeometry(QtCore.QRect(0, 180, 1920, 830))
         self.tableWidget.setObjectName("tableWidget")
@@ -110,8 +117,10 @@ class Ui_MainWindow(object):
         #slot func connect
         self.selectBut.clicked.connect(self.slot_selectBut)
         self.confirmBut.clicked.connect(self.slot_confirmBut)
+        self.searchBut.clicked.connect(self.slot_searchBut)
 
         self.PathText.setClearButtonEnabled(True)
+        self.lineEdit.setClearButtonEnabled(True)
         self.progressBar.setRange(0,100)
         self.progressBar.setValue(0)
         self.nameChk.setChecked(True)
@@ -122,30 +131,32 @@ class Ui_MainWindow(object):
         self.sizeChk.setDisabled(True)
         self.typeChk.setChecked(True)
         self.typeChk.setDisabled(True)
-
+        self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.groupBox.setTitle(_translate("MainWindow", "list out"))
-        self.PathLabel.setText(_translate("MainWindow", "Keyin file name"))
-        self.selectBut.setText(_translate("MainWindow", "select"))
-        self.confirmBut.setText(_translate("MainWindow", "confirm"))
-        self.groupBox_2.setTitle(_translate("MainWindow", "choce the out type"))
-        self.nameChk.setText(_translate("MainWindow", "Name"))
-        self.pathChk.setText(_translate("MainWindow", "Path"))
-        self.sizeChk.setText(_translate("MainWindow", "Size"))
-        self.typeChk.setText(_translate("MainWindow", "Type"))
-        self.timeChk.setText(_translate("MainWindow", "Time"))
+        self.groupBox.setTitle(_translate("MainWindow", "遍历文件夹"))
+        self.PathLabel.setText(_translate("MainWindow", "选择或输入路径"))
+        self.selectBut.setText(_translate("MainWindow", "选择"))
+        self.confirmBut.setText(_translate("MainWindow", "确认"))
+        self.groupBox_2.setTitle(_translate("MainWindow", "选择输出格式"))
+        self.nameChk.setText(_translate("MainWindow", "文件名"))
+        self.pathChk.setText(_translate("MainWindow", "路径"))
+        self.sizeChk.setText(_translate("MainWindow", "大小"))
+        self.typeChk.setText(_translate("MainWindow", "类型"))
+        self.timeChk.setText(_translate("MainWindow", "修改时间"))
         self.md5Chk.setText(_translate("MainWindow", "Md5"))
-        self.groupBox_4.setTitle(_translate("MainWindow", "search"))
-        self.label.setText(_translate("MainWindow", "TextLabel"))
-        self.comboBox.setItemText(0, _translate("MainWindow", "a"))
-        self.comboBox.setItemText(1, _translate("MainWindow", "b"))
-        self.pushButton.setText(_translate("MainWindow", "PushButton"))
-
+        self.groupBox_4.setTitle(_translate("MainWindow", "搜索"))
+        self.label.setText(_translate("MainWindow", "输入文件名"))
+        self.comboBox_type.setItemText(0, _translate("MainWindow", "精确搜索"))
+        self.comboBox_type.setItemText(1, _translate("MainWindow", "模糊搜索"))
+        self.comboBox_area.setItemText(0, _translate("MainWindow", "全局搜索"))
+        self.comboBox_area.setItemText(1, _translate("MainWindow", "结果中搜索"))
+        self.searchBut.setText(_translate("MainWindow", "确认"))
+        
     #define slot function
     def slot_selectBut(self):
         self.PathText.clear()
@@ -155,55 +166,87 @@ class Ui_MainWindow(object):
             self.PathText.insert(selectedDir)
 
     def slot_confirmBut(self):
-        content = self.PathText.text()
+        path = self.PathText.text()
         size_type = self.set_table_size()
-        if(not content):
-            QtWidgets.QMessageBox.warning(self, 'Warning', 'Error in selecting path')
-        if(size_type == 1):
-            self.browse_one()
-        elif(size_type == 2):
-            self.browse_two()
-        elif(size_type == 3):
-            self.browse_three()
-        elif(size_type == 4):
-            print('4')
+        if(not path):
+            QtWidgets.QMessageBox.warning(self, 'Error', 'Error in selecting path')
+        
+        count = 0
+        path = self.PathText.text()
+        iter = QtCore.QDirIterator(path, QtCore.QDir.Files | QtCore.QDir.CaseSensitive | QtCore.QDir.NoDotAndDotDot, QtCore.QDirIterator.Subdirectories)
+        while(iter.hasNext()):
+            iter.next()
+            file_info = iter.fileInfo()
+            row = self.tableWidget.rowCount()
+            self.tableWidget.insertRow(row)
+            self.tableWidget.setItem(count,0,QtWidgets.QTableWidgetItem(file_info.fileName()))
+            self.tableWidget.setItem(count, 1, QtWidgets.QTableWidgetItem(file_info.absoluteFilePath()))
+            self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(file_info.size())))
+            self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(file_info.suffix()))
+           
+            if(size_type == 2):
+                absolu_path = file_info.absoluteFilePath()
+                self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
+            elif(size_type == 3):
+                self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
+            elif(size_type == 4):
+                absolu_path = file_info.absoluteFilePath()
+                self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
+                self.tableWidget.setItem(count, 5, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
+            elif(size_type == 1):
+                pass
+            else:
+                QtWidgets.QMessageBox.warning(self, 'Error', 'Error in size type')
+            count = count + 1
+
+    def slot_searchBut(self):
+        match_type = self.comboBox_type.currentIndex()
+        search_type =self.comboBox_area.currentIndex()
+        filename = self.lineEdit.text()
+        if(not self.lineEdit.text()):
+            QtWidgets.QMessageBox.warning(self, 'Error', 'Error in selecting filename')
+        if(search_type == 0):
+            print('全局搜索')
+            self.search_global(filename, match_type)
+        elif(search_type == 1):
+            print('结果中搜索')
+            self.search_local(filename, match_type)
+        else:
+            QtWidgets.QMessageBox.warning(self, 'Error', 'Error in selecting path')
 
     #other functions
+    def set_table_format(self, columnTitles):
+        self.tableWidget.setHorizontalHeaderLabels(columnTitles)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Interactive)
     def set_table_size(self):
         if(self.md5Chk.isChecked() and not self.timeChk.isChecked()):
-            self.tableWidget.setRowCount(700)
+            self.tableWidget.setRowCount(0)
             self.tableWidget.setColumnCount(5)
             columnTitles = ['Name', 'Path', 'Size', 'Type','Md5']
-            self.tableWidget.setHorizontalHeaderLabels(columnTitles)
-            self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-            self.tableWidget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+            self.set_table_format(columnTitles)        
             return 2
 
         elif(self.timeChk.isChecked() and not self.md5Chk.isChecked()):
-            self.tableWidget.setRowCount(700)
+            self.tableWidget.setRowCount(0)
             self.tableWidget.setColumnCount(5)
             columnTitles = ['Name', 'Path', 'Size', 'Type', 'Time']
-            self.tableWidget.setHorizontalHeaderLabels(columnTitles)
-            self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-            self.tableWidget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+            self.set_table_format(columnTitles)
             return 3
 
         elif(self.md5Chk.isChecked() and self.timeChk.isChecked()):
-            self.tableWidget.setRowCount(700)
+            self.tableWidget.setRowCount(0)
             self.tableWidget.setColumnCount(6)
             columnTitles = ['Name', 'Path', 'Size', 'Type', 'Time', 'Md5']
-            self.tableWidget.setHorizontalHeaderLabels(columnTitles)
-            self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-            self.tableWidget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+            self.set_table_format(columnTitles)
             return 4
 
         else:
-            self.tableWidget.setRowCount(700)
+            self.tableWidget.setRowCount(0)
             self.tableWidget.setColumnCount(4)
             columnTitles = ['Name', 'Path', 'Size', 'Type']
-            self.tableWidget.setHorizontalHeaderLabels(columnTitles)
-            self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-            self.tableWidget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+            self.set_table_format(columnTitles)
             return 1
 
     def formatsize(self, size):
@@ -231,71 +274,61 @@ class Ui_MainWindow(object):
         return res
 
     def getFileMd5(self,path):
-        localFile = QtCore.QFile(path)
-        if(not localFile.open(QtCore.QFile.ReadOnly)):
-            QtWidgets.QMessageBox.warning(self,'Warning','Error in opening file')
-            return 'Error'
-        ch = QtCore.QCryptographicHash(QtCore.QCryptographicHash.Md5)
-        totalBytes = localFile.size()
-        bytesWritten = 0
-        bytesToWrite = totalBytes
-        loadSize = 1024 * 4
-        buf = QtCore.QByteArray()
-        
-        while(True):
-            if(bytesToWrite > 0):
-                buf = QtCore.QByteArray(localFile.read(min(bytesToWrite, loadSize)))
-                ch.addData(buf)
-                bytesWritten = bytesWritten + buf.length()
-                bytesToWrite = bytesToWrite - buf.length()
-                buf.resize(0)
-            else:
+        if not os.path.exists(path):
+            QtWidgets.QMessageBox(self, 'Error', 'file does not exist')
+            return "file does not exist"
+        hash = hashlib.md5()
+        f = open(path, 'rb')
+        while True:
+            b = f.read(8096)
+            if not b:
                 break
-            if(bytesWritten == totalBytes):
-                break
+            hash.update(b)
+        f.close()
+        return hash.hexdigest() 
+
+    def search_global(self, filename, match_type):
+        default_path = 'D:\\'
+        count = 0
+        size_type = self.set_table_size()
+        iter = QtCore.QDirIterator(default_path, QtCore.QDir.Files | QtCore.QDir.CaseSensitive | QtCore.QDir.NoDotAndDotDot, QtCore.QDirIterator.Subdirectories)
+        file_found = False
         
-        localFile.close()
-        md5 = str(type(ch.result()))
-        return md5
-
-    def browse_one(self):
-        count = 0
-        path = self.PathText.text()
-        iter = QtCore.QDirIterator(path, QtCore.QDir.Files | QtCore.QDir.CaseSensitive | QtCore.QDir.NoDotAndDotDot, QtCore.QDirIterator.Subdirectories)
         while(iter.hasNext()):
             iter.next()
-            file_info = iter.fileInfo()
-            self.tableWidget.setItem(count,0,QtWidgets.QTableWidgetItem(file_info.fileName()))
-            self.tableWidget.setItem(count, 1, QtWidgets.QTableWidgetItem(file_info.absoluteFilePath()))
-            self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(file_info.size())))
-            self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(file_info.suffix()))
-            count = count + 1
+            file_info = iter.fileInfo() 
+            if( ((match_type == 0) and (filename == file_info.fileName())) or ( (match_type == 1) and (fuzz.partial_ratio(filename, file_info.fileName()) >= 90) ) ):
+                row = self.tableWidget.rowCount()
+                self.tableWidget.insertRow(row)
+                file_found = True
+                self.tableWidget.setItem(count,0,QtWidgets.QTableWidgetItem(file_info.fileName()))
+                self.tableWidget.setItem(count, 1, QtWidgets.QTableWidgetItem(file_info.absoluteFilePath()))
+                self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(file_info.size())))
+                self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(file_info.suffix()))
 
-    def browse_two(self):
+                if(size_type == 2):
+                    absolu_path = file_info.absoluteFilePath()
+                    self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
+                elif(size_type == 3):
+                    self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
+                elif(size_type == 4):
+                    absolu_path = file_info.absoluteFilePath()
+                    self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
+                    self.tableWidget.setItem(count, 5, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
+                elif(size_type == 1):
+                    pass
+                else:
+                    QtWidgets.QMessageBox.warning(self, 'Error', 'Error in size type')
+                count = count + 1   
+        if(not file_found):
+            QtWidgets.QMessageBox.warning(self, 'Warning', 'can\'t find file')
+        
+    def search_local(self, filename, match_type):
+        rowCount = self.tableWidget.rowCount()
         count = 0
-        path = self.PathText.text()
-        iter = QtCore.QDirIterator(path, QtCore.QDir.Files | QtCore.QDir.CaseSensitive | QtCore.QDir.NoDotAndDotDot, QtCore.QDirIterator.Subdirectories)
-        while(iter.hasNext()):
-            iter.next()
-            file_info = iter.fileInfo()
-            absolu_path = file_info.absoluteFilePath()
-            self.tableWidget.setItem(count,0,QtWidgets.QTableWidgetItem(file_info.fileName()))
-            self.tableWidget.setItem(count, 1, QtWidgets.QTableWidgetItem(file_info.absoluteFilePath()))
-            self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(file_info.size())))
-            self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(file_info.suffix()))
-            self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
-            count = count + 1
-
-    def browse_three(self):
-        count = 0
-        path = self.PathText.text()
-        iter = QtCore.QDirIterator(path, QtCore.QDir.Files | QtCore.QDir.CaseSensitive | QtCore.QDir.NoDotAndDotDot, QtCore.QDirIterator.Subdirectories)
-        while(iter.hasNext()):
-            iter.next()
-            file_info = iter.fileInfo()
-            self.tableWidget.setItem(count,0,QtWidgets.QTableWidgetItem(file_info.fileName()))
-            self.tableWidget.setItem(count, 1, QtWidgets.QTableWidgetItem(file_info.absoluteFilePath()))
-            self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(file_info.size())))
-            self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(file_info.suffix()))
-            self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
-            count = count + 1
+        size_type = self.set_table_size()
+        file_found = False
+        if(rowCount == 0):
+            QtWidgets.QMessageBox.warning(self, 'Error', '当前结果为空')
+            return
+        print(self.tableWidget.item(0,0).text())
