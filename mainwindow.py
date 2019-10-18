@@ -10,10 +10,12 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
 from fuzzywuzzy import fuzz
+from test import *
 import os
 import hashlib
 
 class Ui_MainWindow(object):
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1920, 1080)
@@ -184,12 +186,12 @@ class Ui_MainWindow(object):
             self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(file_info.size())))
             self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(file_info.suffix()))
            
-            if(size_type == 2):
+            if(size_type == 2): #Need to change
                 absolu_path = file_info.absoluteFilePath()
                 self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
             elif(size_type == 3):
                 self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
-            elif(size_type == 4):
+            elif(size_type == 4): #Also need to change
                 absolu_path = file_info.absoluteFilePath()
                 self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
                 self.tableWidget.setItem(count, 5, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
@@ -208,9 +210,11 @@ class Ui_MainWindow(object):
         if(search_type == 0):
             print('全局搜索')
             self.search_global(filename, match_type)
+    
         elif(search_type == 1):
             print('结果中搜索')
-            self.search_local(filename, match_type)
+            self.search_local(filename, match_type):
+    
         else:
             QtWidgets.QMessageBox.warning(self, 'Error', 'Error in selecting path')
 
@@ -220,6 +224,7 @@ class Ui_MainWindow(object):
         self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.tableWidget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
         self.tableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Interactive)
+    
     def set_table_size(self):
         if(self.md5Chk.isChecked() and not self.timeChk.isChecked()):
             self.tableWidget.setRowCount(0)
@@ -301,17 +306,17 @@ class Ui_MainWindow(object):
                 row = self.tableWidget.rowCount()
                 self.tableWidget.insertRow(row)
                 file_found = True
-                self.tableWidget.setItem(count,0,QtWidgets.QTableWidgetItem(file_info.fileName()))
+                self.tableWidget.setItem(count, 0, QtWidgets.QTableWidgetItem(file_info.fileName()))
                 self.tableWidget.setItem(count, 1, QtWidgets.QTableWidgetItem(file_info.absoluteFilePath()))
                 self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(file_info.size())))
                 self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(file_info.suffix()))
 
-                if(size_type == 2):
+                if(size_type == 2): #Need to Change
                     absolu_path = file_info.absoluteFilePath()
                     self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
                 elif(size_type == 3):
                     self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
-                elif(size_type == 4):
+                elif(size_type == 4): #Also need to change
                     absolu_path = file_info.absoluteFilePath()
                     self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
                     self.tableWidget.setItem(count, 5, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
@@ -322,13 +327,28 @@ class Ui_MainWindow(object):
                 count = count + 1   
         if(not file_found):
             QtWidgets.QMessageBox.warning(self, 'Warning', 'can\'t find file')
+        print(self.tableWidget.item(1,0).text())
+        print(self.tableWidget.item(1,1).text())
         
     def search_local(self, filename, match_type):
         rowCount = self.tableWidget.rowCount()
+        colCount = self.tableWidget.columnCount()
         count = 0
-        size_type = self.set_table_size()
         file_found = False
         if(rowCount == 0):
             QtWidgets.QMessageBox.warning(self, 'Error', '当前结果为空')
             return
-        print(self.tableWidget.item(0,0).text())
+        
+        for i in range(rowCount):
+            if( ((match_type == 0) and (filename == self.tableWidget.item(i, 0).text())) or ( (match_type == 1) and (fuzz.partial_ratio(filename, self.tableWidget.item(i, 0).text()) >= 90) ) ):
+                file_found = True
+                for j in range(colCount):
+                    self.tableWidget.setItem(count, j, QtWidgets.QTableWidgetItem(self.tableWidget.item(i, j).text()))
+                count = count + 1
+        
+        for j in range(rowCount - count):
+            self.tableWidget.removeRow(count)
+
+        if(not file_found):
+            QtWidgets.QMessageBox.warning(self, 'Error', '未找到文件')
+         
