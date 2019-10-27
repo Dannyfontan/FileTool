@@ -1,25 +1,17 @@
-# -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file 'mainwindow.ui'
-#
-# Created by: PyQt5 UI code generator 5.13.0
-#
-# WARNING! All changes made in this file will be lost!
-
-
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QFileDialog
 from fuzzywuzzy import fuzz
-from test import *
 import os
 import hashlib
+import time
 
-class Ui_MainWindow(object):
-
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1920, 1080)
-        self.centralWidget = QtWidgets.QWidget(MainWindow)
+class MyWindow(QtWidgets.QMainWindow):
+    count = 0
+    size_type = 0
+    def __init__(self, parent=None):
+        super(MyWindow, self).__init__(parent)
+        self.setWindowTitle("Fucking Test")
+        self.resize(1920, 1080)
+        self.centralWidget = QtWidgets.QWidget()
         self.centralWidget.setObjectName("centralWidget")
         self.groupBox = QtWidgets.QGroupBox(self.centralWidget)
         self.groupBox.setGeometry(QtCore.QRect(180, 10, 861, 91))
@@ -102,25 +94,40 @@ class Ui_MainWindow(object):
         self.tableWidget.setRowCount(0)
         self.progressBar = QtWidgets.QProgressBar(self.centralWidget)
         self.progressBar.setGeometry(QtCore.QRect(1060, 127, 651, 43))
-        self.progressBar.setProperty("value", 24)
         self.progressBar.setObjectName("progressBar")
-        MainWindow.setCentralWidget(self.centralWidget)
-        self.menuBar = QtWidgets.QMenuBar(MainWindow)
+        self.setCentralWidget(self.centralWidget)
+        self.menuBar = QtWidgets.QMenuBar()
         self.menuBar.setGeometry(QtCore.QRect(0, 0, 1920, 28))
         self.menuBar.setObjectName("menuBar")
-        MainWindow.setMenuBar(self.menuBar)
-        self.mainToolBar = QtWidgets.QToolBar(MainWindow)
+        self.setMenuBar(self.menuBar)
+        self.mainToolBar = QtWidgets.QToolBar(self)
         self.mainToolBar.setObjectName("mainToolBar")
-        MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.mainToolBar)
-        self.statusBar = QtWidgets.QStatusBar(MainWindow)
+        self.addToolBar(QtCore.Qt.TopToolBarArea, self.mainToolBar)
+        self.statusBar = QtWidgets.QStatusBar(self)
         self.statusBar.setObjectName("statusBar")
-        MainWindow.setStatusBar(self.statusBar)
+        self.setStatusBar(self.statusBar)
+        
 
-        #slot func connect
-        self.selectBut.clicked.connect(self.slot_selectBut)
-        self.confirmBut.clicked.connect(self.slot_confirmBut)
-        self.searchBut.clicked.connect(self.slot_searchBut)
+        self.groupBox.setTitle("遍历文件夹")
+        self.PathLabel.setText("选择或输入路径")
+        self.selectBut.setText("选择")
+        self.confirmBut.setText("确认")
+        self.groupBox_2.setTitle("选择输出格式")
+        self.nameChk.setText("文件名")
+        self.pathChk.setText("路径")
+        self.sizeChk.setText("大小")
+        self.typeChk.setText("类型")
+        self.timeChk.setText("修改时间")
+        self.md5Chk.setText("Md5")
+        self.groupBox_4.setTitle("搜索")
+        self.label.setText("输入文件名")
+        self.comboBox_type.setItemText(0, "精确搜索")
+        self.comboBox_type.setItemText(1, "模糊搜索")
+        self.comboBox_area.setItemText(0, "全局搜索")
+        self.comboBox_area.setItemText(1, "结果中搜索")
+        self.searchBut.setText("搜索")
 
+        #各组件状态的设定
         self.PathText.setClearButtonEnabled(True)
         self.lineEdit.setClearButtonEnabled(True)
         self.progressBar.setRange(0,100)
@@ -134,98 +141,113 @@ class Ui_MainWindow(object):
         self.typeChk.setChecked(True)
         self.typeChk.setDisabled(True)
         self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-    def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.groupBox.setTitle(_translate("MainWindow", "遍历文件夹"))
-        self.PathLabel.setText(_translate("MainWindow", "选择或输入路径"))
-        self.selectBut.setText(_translate("MainWindow", "选择"))
-        self.confirmBut.setText(_translate("MainWindow", "确认"))
-        self.groupBox_2.setTitle(_translate("MainWindow", "选择输出格式"))
-        self.nameChk.setText(_translate("MainWindow", "文件名"))
-        self.pathChk.setText(_translate("MainWindow", "路径"))
-        self.sizeChk.setText(_translate("MainWindow", "大小"))
-        self.typeChk.setText(_translate("MainWindow", "类型"))
-        self.timeChk.setText(_translate("MainWindow", "修改时间"))
-        self.md5Chk.setText(_translate("MainWindow", "Md5"))
-        self.groupBox_4.setTitle(_translate("MainWindow", "搜索"))
-        self.label.setText(_translate("MainWindow", "输入文件名"))
-        self.comboBox_type.setItemText(0, _translate("MainWindow", "精确搜索"))
-        self.comboBox_type.setItemText(1, _translate("MainWindow", "模糊搜索"))
-        self.comboBox_area.setItemText(0, _translate("MainWindow", "全局搜索"))
-        self.comboBox_area.setItemText(1, _translate("MainWindow", "结果中搜索"))
-        self.searchBut.setText(_translate("MainWindow", "确认"))
         
-    #define slot function
-    def slot_selectBut(self):
-        self.PathText.clear()
-        self.tableWidget.clearContents()
-        selectedDir = QFileDialog.getExistingDirectory(self,'选择文件夹','D:\\')
-        if selectedDir:
-            self.PathText.insert(selectedDir)
+        #按钮绑定槽函数
+        self.selectBut.clicked.connect(self.slot_selectBut)
+        self.confirmBut.clicked.connect(self.slot_confirmBut)
+        self.searchBut.clicked.connect(self.slot_searchBut)
 
-    def slot_confirmBut(self):
-        path = self.PathText.text()
-        size_type = self.set_table_size()
+    #槽函数
+    def slot_selectBut(self):                   #选择按钮的槽函数
+            self.PathText.clear()
+            self.tableWidget.clearContents()
+            selectedDir = QtWidgets.QFileDialog.getExistingDirectory(self,'选择文件夹','D:\\')
+            
+            if selectedDir:
+                self.PathText.insert(selectedDir)
+            
+    def slot_confirmBut(self):                  #确认按钮的槽函数
+        self.confirmBut.setDisabled(True)
+        self.searchBut.setDisabled(True)
+        path = self.PathText.text()             #获得框中的路径
+        
         if(not path):
-            QtWidgets.QMessageBox.warning(self, 'Error', 'Error in selecting path')
-        
+            QtWidgets.QMessageBox.warning(self, 'Error', '请输入或选择路径')
+            self.confirmBut.setDisabled(False)
+            self.searchBut.setDisabled(False)
+            return
+
+        if not os.path.exists(path):
+            QtWidgets.QMessageBox.critical(self, 'Error', '路径不存在')
+            self.confirmBut.setDisabled(False)
+            self.searchBut.setDisabled(False)
+            return
+
         count = 0
-        path = self.PathText.text()
+        self.progressBar.setValue(0)
+        size_type =  self.set_table_size()
+        self.progressBar.setMinimum(0)          #让进度条滚动
+        self.progressBar.setMaximum(0)  
+
         iter = QtCore.QDirIterator(path, QtCore.QDir.Files | QtCore.QDir.CaseSensitive | QtCore.QDir.NoDotAndDotDot, QtCore.QDirIterator.Subdirectories)
+        #starttime = QtCore.QTime.currentTime()
+        
         while(iter.hasNext()):
             iter.next()
-            file_info = iter.fileInfo()
-            row = self.tableWidget.rowCount()
-            self.tableWidget.insertRow(row)
-            self.tableWidget.setItem(count,0,QtWidgets.QTableWidgetItem(file_info.fileName()))
-            self.tableWidget.setItem(count, 1, QtWidgets.QTableWidgetItem(file_info.absoluteFilePath()))
-            self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(file_info.size())))
-            self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(file_info.suffix()))
-           
-            if(size_type == 2): #Need to change
-                absolu_path = file_info.absoluteFilePath()
+            self.tableWidget.insertRow(count)
+            self.tableWidget.setItem(count, 0, QtWidgets.QTableWidgetItem(iter.fileInfo().fileName()))
+            self.tableWidget.setItem(count, 1, QtWidgets.QTableWidgetItem(iter.fileInfo().absoluteFilePath()))
+            self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(iter.fileInfo().size())))
+            self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(iter.fileInfo().suffix()))
+        
+            if(size_type == 2):
+                absolu_path = iter.fileInfo().absoluteFilePath()
                 self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
+
             elif(size_type == 3):
-                self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
-            elif(size_type == 4): #Also need to change
-                absolu_path = file_info.absoluteFilePath()
-                self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
+               self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(iter.fileInfo().created().toString("yyyy-MM-dd hh:mm:ss")))
+            
+            elif(size_type == 4): 
+                absolu_path = iter.fileInfo().absoluteFilePath()
+                self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(iter.fileInfo().created().toString("yyyy-MM-dd hh:mm:ss")))
                 self.tableWidget.setItem(count, 5, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
+
             elif(size_type == 1):
                 pass
-            else:
-                QtWidgets.QMessageBox.warning(self, 'Error', 'Error in size type')
-            count = count + 1
 
-    def slot_searchBut(self):
+            else:
+                QtWidgets.QMessageBox.warning(self, 'Error', '选择的类型错误')
+            count = count + 1
+            QtWidgets.QApplication.processEvents()
+            #TODO:
+            #endtime = QtCore.QTime.currentTime()
+            #diff = starttime.msecsTo(endtime)
+
+        self.progressBar.setMaximum(100)                        #停止滚动
+        self.progressBar.setValue(100)
+        self.confirmBut.setDisabled(False)
+        self.searchBut.setDisabled(False)
+
+    def slot_searchBut(self):                                  #搜索键的槽函数
         match_type = self.comboBox_type.currentIndex()
         search_type =self.comboBox_area.currentIndex()
         filename = self.lineEdit.text()
+        
         if(not self.lineEdit.text()):
-            QtWidgets.QMessageBox.warning(self, 'Error', 'Error in selecting filename')
-        if(search_type == 0):
-            print('全局搜索')
-            self.search_global(filename, match_type)
-    
-        elif(search_type == 1):
-            print('结果中搜索')
-            self.search_local(filename, match_type):
-    
-        else:
-            QtWidgets.QMessageBox.warning(self, 'Error', 'Error in selecting path')
+            QtWidgets.QMessageBox.warning(self, 'Error', '文件名有误')
+            return
 
-    #other functions
-    def set_table_format(self, columnTitles):
+        if(search_type == 0):
+            self.searchBut.setDisabled(True)
+            self.search_global(filename, match_type)
+            self.searchBut.setDisabled(False)
+
+        elif(search_type == 1):
+            self.searchBut.setDisabled(True)
+            self.search_local(filename, match_type)
+            self.searchBut.setDisabled(False)
+
+        else:
+            QtWidgets.QMessageBox.critical(self, 'Error', '搜索方式有问题')
+            return
+
+    def set_table_format(self, columnTitles):                   #设定表头
         self.tableWidget.setHorizontalHeaderLabels(columnTitles)
         self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.tableWidget.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
         self.tableWidget.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Interactive)
     
-    def set_table_size(self):
+    def set_table_size(self):                                   #根据勾选项确定输出格式
         if(self.md5Chk.isChecked() and not self.timeChk.isChecked()):
             self.tableWidget.setRowCount(0)
             self.tableWidget.setColumnCount(5)
@@ -253,8 +275,8 @@ class Ui_MainWindow(object):
             columnTitles = ['Name', 'Path', 'Size', 'Type']
             self.set_table_format(columnTitles)
             return 1
-
-    def formatsize(self, size):
+    
+    def formatsize(self, size):                         #将文件大小格式化
         size = int(size)
         if(size < 1024):
             res = str(size) + 'b'
@@ -277,11 +299,12 @@ class Ui_MainWindow(object):
             size = round(size, 2)
             res = str(size) + 'GB'
         return res
-
-    def getFileMd5(self,path):
+    
+    def getFileMd5(self,path):                              #计算MD5
         if not os.path.exists(path):
-            QtWidgets.QMessageBox(self, 'Error', 'file does not exist')
+            QtWidgets.QMessageBox.critical(self, 'Error', '文件不存在')
             return "file does not exist"
+
         hash = hashlib.md5()
         f = open(path, 'rb')
         while True:
@@ -292,53 +315,74 @@ class Ui_MainWindow(object):
         f.close()
         return hash.hexdigest() 
 
-    def search_global(self, filename, match_type):
+    def search_global(self, filename, match_type):              #全局搜索
         default_path = 'D:\\'
         count = 0
         size_type = self.set_table_size()
-        iter = QtCore.QDirIterator(default_path, QtCore.QDir.Files | QtCore.QDir.CaseSensitive | QtCore.QDir.NoDotAndDotDot, QtCore.QDirIterator.Subdirectories)
+        self.progressBar.setValue(0)
+        self.searchBut.setDisabled(True)
+        self.confirmBut.setDisabled(True) 
+        self.progressBar.setMinimum(0)
+        self.progressBar.setMaximum(0)
         file_found = False
+
+        iter = QtCore.QDirIterator(default_path, QtCore.QDir.Files | QtCore.QDir.CaseSensitive | QtCore.QDir.NoDotAndDotDot, QtCore.QDirIterator.Subdirectories)
         
         while(iter.hasNext()):
             iter.next()
-            file_info = iter.fileInfo() 
-            if( ((match_type == 0) and (filename == file_info.fileName())) or ( (match_type == 1) and (fuzz.partial_ratio(filename, file_info.fileName()) >= 90) ) ):
-                row = self.tableWidget.rowCount()
-                self.tableWidget.insertRow(row)
+            if( ((match_type == 0) and (filename == iter.fileInfo().fileName())) or ( (match_type == 1) and (fuzz.partial_ratio(filename, iter.fileInfo().fileName()) >= 90) ) ):
+                self.tableWidget.insertRow(count)
                 file_found = True
-                self.tableWidget.setItem(count, 0, QtWidgets.QTableWidgetItem(file_info.fileName()))
-                self.tableWidget.setItem(count, 1, QtWidgets.QTableWidgetItem(file_info.absoluteFilePath()))
-                self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(file_info.size())))
-                self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(file_info.suffix()))
+                self.tableWidget.setItem(count, 0, QtWidgets.QTableWidgetItem(iter.fileInfo().fileName()))
+                self.tableWidget.setItem(count, 1, QtWidgets.QTableWidgetItem(iter.fileInfo().absoluteFilePath()))
+                self.tableWidget.setItem(count, 2, QtWidgets.QTableWidgetItem(self.formatsize(iter.fileInfo().size())))
+                self.tableWidget.setItem(count, 3, QtWidgets.QTableWidgetItem(iter.fileInfo().suffix()))
 
-                if(size_type == 2): #Need to Change
-                    absolu_path = file_info.absoluteFilePath()
+                if(size_type == 2): 
+                    absolu_path = iter.fileInfo().absoluteFilePath()
                     self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
+                
                 elif(size_type == 3):
-                    self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
-                elif(size_type == 4): #Also need to change
-                    absolu_path = file_info.absoluteFilePath()
-                    self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(file_info.created().toString("yyyy-MM-dd hh:mm:ss")))
+                    self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(iter.fileInfo().created().toString("yyyy-MM-dd hh:mm:ss")))
+                
+                elif(size_type == 4): 
+                    absolu_path = iter.fileInfo().absoluteFilePath()
+                    self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(iter.fileInfo().created().toString("yyyy-MM-dd hh:mm:ss")))
                     self.tableWidget.setItem(count, 5, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
+                
                 elif(size_type == 1):
                     pass
+
                 else:
                     QtWidgets.QMessageBox.warning(self, 'Error', 'Error in size type')
-                count = count + 1   
+                
+                count = count + 1
+                QtWidgets.QApplication.processEvents()
+
         if(not file_found):
             QtWidgets.QMessageBox.warning(self, 'Warning', 'can\'t find file')
-        print(self.tableWidget.item(1,0).text())
-        print(self.tableWidget.item(1,1).text())
+
+        self.progressBar.setMaximum(100)            
+        self.progressBar.setValue(100)
+        self.searchBut.setDisabled(False) 
+        self.confirmBut.setDisabled(False) 
         
-    def search_local(self, filename, match_type):
+    def search_local(self, filename, match_type):           #在已有的结果中搜索
         rowCount = self.tableWidget.rowCount()
         colCount = self.tableWidget.columnCount()
-        count = 0
-        file_found = False
+        
         if(rowCount == 0):
             QtWidgets.QMessageBox.warning(self, 'Error', '当前结果为空')
             return
         
+        count = 0
+        self.progressBar.setValue(0)
+        self.searchBut.setDisabled(True)
+        self.confirmBut.setDisabled(True)
+        self.progressBar.setMinimum(0)
+        self.progressBar.setMaximum(0)
+        file_found = False
+
         for i in range(rowCount):
             if( ((match_type == 0) and (filename == self.tableWidget.item(i, 0).text())) or ( (match_type == 1) and (fuzz.partial_ratio(filename, self.tableWidget.item(i, 0).text()) >= 90) ) ):
                 file_found = True
@@ -351,4 +395,8 @@ class Ui_MainWindow(object):
 
         if(not file_found):
             QtWidgets.QMessageBox.warning(self, 'Error', '未找到文件')
-         
+        
+        self.progressBar.setMaximum(100)            
+        self.progressBar.setValue(100)
+        self.searchBut.setDisabled(False) 
+        self.confirmBut.setDisabled(False)
