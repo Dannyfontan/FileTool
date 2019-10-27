@@ -9,7 +9,7 @@ class MyWindow(QtWidgets.QMainWindow):
     size_type = 0
     def __init__(self, parent=None):
         super(MyWindow, self).__init__(parent)
-        self.setWindowTitle("Fucking Test")
+        self.setWindowTitle("File Tool")
         self.resize(1920, 1080)
         self.centralWidget = QtWidgets.QWidget()
         self.centralWidget.setObjectName("centralWidget")
@@ -155,7 +155,10 @@ class MyWindow(QtWidgets.QMainWindow):
             
             if selectedDir:
                 self.PathText.insert(selectedDir)
-            
+            else:
+                QtWidgets.QMessageBox.critical(self, 'Error', '文件夹选择出错')
+                return 
+
     def slot_confirmBut(self):                  #确认按钮的槽函数
         self.confirmBut.setDisabled(True)
         self.searchBut.setDisabled(True)
