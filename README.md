@@ -1,11 +1,12 @@
 一个用pyqt写的工具
 =========
 ~~具体用处未知 花了不少时间来折腾~~
-
+![初始页面](https://github.com/Dannyfontan/FileTool/blob/master/screenshots/main.JPG)
 *算是练手吧*
 功能介绍
 
 1.遍历指定目录文件
+![遍历](https://github.com/Dannyfontan/FileTool/blob/master/screenshots/Travel.JPG)
 >之前是用QT5来实现 故用的是QDirIterator 直接使用即可 不用自己手动实现遍历
 >
 >使用QDirIterator来遍历的好处是得到一个iterator 其包含不少信息 可以直接用方法来得到这些信息
@@ -19,6 +20,7 @@
 > 但是文件数目过多时还是有卡顿的问题
 
 2.搜索文件
+![搜索](https://github.com/Dannyfontan/FileTool/blob/master/screenshots/Search.JPG)
 >全局的文件搜索 实现方式和遍历一致 无奈技术有限 代码无法复用
 >
 >从遍历结果中来搜索文件就是遍历列表 ~~太low了~~
