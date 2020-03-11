@@ -198,7 +198,7 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(self.getFileMd5(absolu_path)))
 
             elif(size_type == 3):
-               self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(iter.fileInfo().created().toString("yyyy-MM-dd hh:mm:ss")))
+                self.tableWidget.setItem(count, 4, QtWidgets.QTableWidgetItem(iter.fileInfo().created().toString("yyyy-MM-dd hh:mm:ss")))
             
             elif(size_type == 4): 
                 absolu_path = iter.fileInfo().absoluteFilePath()
